@@ -1,9 +1,14 @@
 import { RequestHandler } from "express";
 import { AppDataSource } from "../data_source";
+import { Bug, BugStatus, bugStatusValues } from "../entities/Bug";
 import { Project } from "../entities/Project";
 import { requestKeysAllowed, requiredKeysPresent, bodyIsEmpty } from "./utils/checkBody";
+import { convertStringToDate, isISOStringDate } from "./utils/dateTools";
 
 const projectRepository = AppDataSource.getRepository(Project);
+const bugRepository = AppDataSource.getRepository(Bug);
+
+const dateKeys = ["due_date", "end_date"]; 
 
 const checkBodyValues = (body: Object): boolean => {
     for(const [key, value] of Object.entries(body)) {
@@ -12,20 +17,59 @@ const checkBodyValues = (body: Object): boolean => {
             case "description":
                 if(typeof value != "string") return false;
                 break;
+
+            case "priority":
+                if(typeof value != "number" && !Number.isInteger(value)) return false;
+                break;
+
+            case "status":
+                if(typeof value != "string" || !bugStatusValues.includes(value))
+                    return false;
+                break;
+                
+            case "due_date":
+            case "end_date":  
+                if(value != null && (typeof value != "string" || ! isISOStringDate(value as string)))
+                    return false;
+                break; 
         }
     }
 
     return true;
 }
 
-const getAll: RequestHandler = async (req , res, next) => {
+const getAllBugsByProject: RequestHandler = async (req, res, next) => {
+    const projectId:number = parseInt(req.params.projectId);
+
+    if(isNaN(projectId)) {
+        res.status(400)
+        res.json({
+            message: "Unvalid projectId"
+        });
+
+        next();
+        return;
+    }
 
     try{
-        const allProjects = await projectRepository.find();
+        const project = await projectRepository.findOne({
+            where:{
+                id: projectId
+            },
+            relations: {
+                bugs: true
+            }
+        })
+
+        if(project == null) {
+            res.status(404).end();
+            next();
+            return;
+        }
 
         res.status(200)
-            .json(allProjects);
-        
+            .json(project.bugs);
+
     }
     catch(err) {
         console.log(err);
@@ -36,10 +80,9 @@ const getAll: RequestHandler = async (req , res, next) => {
 }
 
 const getById: RequestHandler = async (req, res, next) => {
-    
-    const id:number = parseInt(req.params.projectId);
+    const bugId:number = parseInt(req.params.bugId);
 
-    if(isNaN(id)) {
+    if(isNaN(bugId)) {
         res.status(400)
         res.json({
             message: "Unvalid id"
@@ -50,23 +93,16 @@ const getById: RequestHandler = async (req, res, next) => {
     }
 
     try{
-        const project = await projectRepository.findOne({
-            where: {
-                id: id
-            },
-            relations: {
-                bugs: true
-            }
-        });
+        const bug = await bugRepository.findOneBy({ id: bugId });
 
-        if(project == null) {
+        if(bug == null) {
             res.status(404).end();
             next();
             return;
         }
 
         res.status(200)
-            .json(project);
+            .json(bug);
 
     }
     catch(err) {
@@ -78,9 +114,19 @@ const getById: RequestHandler = async (req, res, next) => {
 }
 
 const create: RequestHandler = async (req, res, next) => {
-
-    const allowedKeys = ["title", "description"];
+    const projectId:number = parseInt(req.params.projectId);
+    const allowedKeys = ["title", "description", "priority", "status", "due_date"];
     const requiredKeys = ["title"];
+
+    if(isNaN(projectId)) {
+        res.status(400)
+        res.json({
+            message: "Unvalid projectId"
+        });
+
+        next();
+        return;
+    }
 
     if(bodyIsEmpty(req)) {
         res.status(400)
@@ -113,12 +159,32 @@ const create: RequestHandler = async (req, res, next) => {
     }
 
     try{
-        const createdProject = await projectRepository.create(req.body as Object);
+        const bugValues = convertStringToDate(req.body as Object, dateKeys);
 
-        await projectRepository.save(createdProject);
+        const project = await projectRepository.findOne({
+            where:{
+                id: projectId
+            },
+            relations: {
+                bugs: true
+            }
+        })
 
+        if(project == null) {
+            res.status(404).end();
+            next();
+            return;
+        }
+
+        const bug = await bugRepository.create(bugValues);
+
+        bugRepository.merge(bug, {project: project});
+
+        await bugRepository.save(bug);
+
+        bug.project.bugs = [];
         res.status(200)
-            .json(createdProject);
+            .json(bug);
     }
     catch(err) {
         console.log(err);
@@ -129,9 +195,8 @@ const create: RequestHandler = async (req, res, next) => {
 }
 
 const update: RequestHandler = async (req, res, next) => {
-    const allowedKeys = ["title", "description"];
-
-    const id:number = parseInt(req.params.projectId);
+    const id:number = parseInt(req.params.bugId);
+    const allowedKeys = ["title", "description", "priority", "status", "due_date", "end_date"];
 
     if(isNaN(id)) {
         res.status(400)
@@ -174,17 +239,20 @@ const update: RequestHandler = async (req, res, next) => {
     }
 
     try{
-        const project = await projectRepository.findOneBy({id: id});
+        const bugValues = convertStringToDate(req.body as Object, dateKeys);
 
-        if(project == null) {
+        const bug = await bugRepository.findOneBy({ id: id });
+
+        if(bug == null) {
             res.status(404).end();
             next();
             return;
         }
-        
-        projectRepository.merge(project!, req.body);
-        
-        const result = await projectRepository.save(project);
+
+        bugRepository.merge(bug, bugValues);
+
+        const result = await bugRepository.save(bug);
+        //result.project.bugs = []; // decomment if you want to send the updated bug to the client
 
         res.status(200).end();
     }
@@ -193,11 +261,11 @@ const update: RequestHandler = async (req, res, next) => {
         res.status(500).end();
     }
 
-    next();
+    next();    
 }
 
-const deleteProject: RequestHandler = async (req, res, next) => {
-    const id:number = parseInt(req.params.projectId);
+const deleteBug: RequestHandler = async (req, res, next) => {
+    const id:number = parseInt(req.params.bugId);
 
     if(isNaN(id)) {
         res.status(400)
@@ -210,13 +278,14 @@ const deleteProject: RequestHandler = async (req, res, next) => {
     }
 
     try{
-        if(await projectRepository.findOneBy({id: id}) == null) {
+
+        if(await bugRepository.findOneBy({id: id}) == null) {
             res.status(404).end();
             next();
             return;
         } 
 
-        await projectRepository.delete(id);
+        await bugRepository.delete(id);
 
         res.status(200).end();
     }
@@ -228,13 +297,12 @@ const deleteProject: RequestHandler = async (req, res, next) => {
     next();
 }
 
-
 const controller = {
-    getAll,
+    getAllBugsByProject,
     getById,
     create,
     update,
-    deleteProject
+    deleteBug
 }
 
 export { controller as default };

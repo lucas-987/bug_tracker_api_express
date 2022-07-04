@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Bug } from "./Bug";
 
 @Entity() 
 export class Project {
@@ -14,4 +15,6 @@ export class Project {
     })
     description: string
 
+    @OneToMany(() => Bug, (bug) => bug.project)
+    bugs: Bug[]
 }

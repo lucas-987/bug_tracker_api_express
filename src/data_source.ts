@@ -1,5 +1,6 @@
 import "reflect-metadata"
 import { DataSource } from "typeorm"
+import { Bug } from "./entities/Bug"
 import { Project } from "./entities/Project"
 
 export const AppDataSource = new DataSource({
@@ -11,7 +12,7 @@ export const AppDataSource = new DataSource({
     database: "bug_tracker_express",
     synchronize: true,
     logging: true,
-    entities: [Project],
+    entities: [Project, Bug],
     subscribers: [],
     migrations: [],
 })
