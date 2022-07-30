@@ -10,7 +10,7 @@ const checkBodyValues = (body: Object): boolean => {
         switch(key) {
             case "title":
             case "description":
-                if(typeof value != "string") return false;
+                if(typeof value != "string" && value !== null) return false;
                 break;
         }
     }

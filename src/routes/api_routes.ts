@@ -3,6 +3,8 @@ const router = express.Router();
 import bug_controller from '../controllers/bug_controller';
 import project_controller from '../controllers/project_controller';
 
+// all the routes bellow are prefixed with "/api"
+
 /*** project ***/
 router.get('/project', project_controller.getAll);
 router.get('/project/:projectId', project_controller.getById);
