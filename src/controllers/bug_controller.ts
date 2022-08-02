@@ -14,8 +14,11 @@ const checkBodyValues = (body: Object): boolean => {
     for(const [key, value] of Object.entries(body)) {
         switch(key) {
             case "title":
-            case "description":
                 if(typeof value != "string") return false;
+                break;
+
+            case "description":
+                if(value !== null && typeof value != "string") return false;
                 break;
 
             case "priority":
