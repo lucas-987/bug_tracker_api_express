@@ -189,7 +189,8 @@ const update: RequestHandler = async (req, res, next) => {
         
         const result = await projectRepository.save(project);
 
-        res.status(200).end();
+        res.status(200)
+            .json(result);
     }
     catch(err) {
         console.log(err);

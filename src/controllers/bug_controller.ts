@@ -255,9 +255,9 @@ const update: RequestHandler = async (req, res, next) => {
         bugRepository.merge(bug, bugValues);
 
         const result = await bugRepository.save(bug);
-        //result.project.bugs = []; // decomment if you want to send the updated bug to the client
 
-        res.status(200).end();
+        res.status(200)
+            .json(result);
     }
     catch(err) {
         console.log(err);
