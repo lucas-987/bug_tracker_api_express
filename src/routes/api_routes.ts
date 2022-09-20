@@ -21,7 +21,7 @@ router.put('/bug/:bugId', bug_controller.update);
 router.delete('/bug/:bugId', bug_controller.deleteBug);
 
 /***  user ***/
-router.get('/user/login', user_controller.login);
+router.post('/user/login', user_controller.login);
 router.get('/user/:id', user_controller.getUserById);
 router.get('/user', user_controller.getAllUsers);
 router.post('/user', user_controller.create);
