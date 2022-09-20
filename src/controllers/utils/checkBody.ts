@@ -1,7 +1,7 @@
 import { Request } from "express"
 
 const bodyIsEmpty = (req: Request): boolean => {
-    if( Object.keys(req.body).length === 0 && req.body.constructor === Object)
+    if(!("body" in req) || req.body == null || (Object.keys(req.body).length === 0 && req.body.constructor === Object))
         return true;
 
     return false;
