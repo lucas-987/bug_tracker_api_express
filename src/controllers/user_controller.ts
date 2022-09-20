@@ -37,30 +37,24 @@ const login: RequestHandler = async (req, res, next) => {
     if(bodyIsEmpty(req)) {
         res.status(400)
             .json({
-            message: "Body missing."
-        });
-
-        next();
+                message: "Body missing."
+            });
         return;
     }
 
     if(!requiredKeysPresent(req, requiredKeys) || !requestKeysAllowed(req, allowedKeys)) {
         res.status(400)
             .json({
-            message: "Some keys are invalid or missing."
-        });
-
-        next();
+                message: "Some keys are invalid or missing."
+            });
         return;
     }
 
     if(! checkBodyValues(req.body)) {
         res.status(400)
             .json({
-            message: "Some values are invalid."
-        });
-
-        next();
+                message: "Some values are invalid."
+            });
         return;
     }
 
@@ -73,17 +67,14 @@ const login: RequestHandler = async (req, res, next) => {
 
         if(user == null) {
             res.status(404).end();
-            next();
             return;
         }
 
         if(! await bcrypt.compare(req.body.password, user.passwordHash)) {
             res.status(400)
                 .json({
-                    message: "Wrong credentials."
-                });
-
-            next();
+                        message: "Wrong credentials."
+                    });
             return;
         }
 
@@ -97,8 +88,6 @@ const login: RequestHandler = async (req, res, next) => {
         console.log(err);
         res.status(500).end();
     }
-
-    next();
 }
 
 const getAllUsers: RequestHandler = async (req, res, next) => {
@@ -117,8 +106,6 @@ const getAllUsers: RequestHandler = async (req, res, next) => {
         console.log(err);
         res.status(500).end();
     }
-
-    next();
 }
 
 const getUserById: RequestHandler = async (req, res, next) => {
@@ -127,10 +114,8 @@ const getUserById: RequestHandler = async (req, res, next) => {
     if(isNaN(id)) {
         res.status(400)
             .json({
-            message: "Unvalid id"
-        });
-
-        next();
+                message: "Unvalid id"
+            });
         return;
     }
 
@@ -143,7 +128,6 @@ const getUserById: RequestHandler = async (req, res, next) => {
 
         if(user == null) {
             res.status(404).end();
-            next();
             return;
         }
 
@@ -156,8 +140,6 @@ const getUserById: RequestHandler = async (req, res, next) => {
         console.log(err);
         res.status(500).end();
     }
-
-    next();
 }
 
 const create: RequestHandler = async (req, res, next) => {
@@ -167,30 +149,24 @@ const create: RequestHandler = async (req, res, next) => {
     if(bodyIsEmpty(req)) {
         res.status(400)
             .json({
-            message: "Body missing."
-        });
-
-        next();
+                message: "Body missing."
+            });
         return;
     }
 
     if(!requestKeysAllowed(req, allowedKeys) || !requiredKeysPresent(req, requiredKeys)) {
         res.status(400)
             .json({
-            message: "Some keys are invalid or missing."
-        });
-
-        next();
+                message: "Some keys are invalid or missing."
+            });
         return;
     }
 
     if(! checkBodyValues(req.body)) {
         res.status(400)
             .json({
-            message: "Some values are invalid."
-        });
-
-        next();
+                message: "Some values are invalid."
+            });
         return;
     }
 
@@ -213,8 +189,6 @@ const create: RequestHandler = async (req, res, next) => {
         console.log(err);
         res.status(500).end();
     }
-
-    next();
 }
 
 const update: RequestHandler = async (req, res, next) => {
@@ -226,20 +200,16 @@ const update: RequestHandler = async (req, res, next) => {
     if(isNaN(id)) {
         res.status(400)
             .json({
-            message: "Unvalid id"
-        });
-
-        next();
+                message: "Unvalid id"
+            });
         return;
     }
 
     if(bodyIsEmpty(req)) {
         res.status(400)
             .json({
-                message: "Body missing."
-            });
-
-        next();
+                    message: "Body missing."
+                });
         return;
     }
     if('password' in req.body || 'password2' in req.body) requiredKeys = ["password", "password2"] 
@@ -247,20 +217,16 @@ const update: RequestHandler = async (req, res, next) => {
     if(!requestKeysAllowed(req, allowedKeys) || !requiredKeysPresent(req, requiredKeys)) {
         res.status(400)
             .json({
-            message: "Some keys are not allowed or missing."
-        });
-
-        next();
+                message: "Some keys are not allowed or missing."
+            });
         return;
     }
 
     if(! checkBodyValues(req.body)) {
         res.status(400)
             .json({
-            message: "Some values are invalid."
-        });
-
-        next();
+                message: "Some values are invalid."
+            });
         return;
     }
 
@@ -269,7 +235,6 @@ const update: RequestHandler = async (req, res, next) => {
 
         if(user == null) {
             res.status(404).end();
-            next();
             return;
         }
 
@@ -294,8 +259,6 @@ const update: RequestHandler = async (req, res, next) => {
         console.log(err);
         res.status(500).end();
     }
-
-    next();
 }
 
 const deleteUser: RequestHandler = async (req, res, next) => {
@@ -304,17 +267,14 @@ const deleteUser: RequestHandler = async (req, res, next) => {
     if(isNaN(id)) {
         res.status(400)
             .json({
-            message: "Unvalid id"
-        });
-
-        next();
+                message: "Unvalid id"
+            });
         return;
     }
 
     try{
         if(await userRepository.findOneBy({id: id}) == null) {
             res.status(404).end();
-            next();
             return;
         } 
 
@@ -326,8 +286,6 @@ const deleteUser: RequestHandler = async (req, res, next) => {
         console.log(err);
         res.status(500).end();
     }
-
-    next();
 }
 
 const controller = {

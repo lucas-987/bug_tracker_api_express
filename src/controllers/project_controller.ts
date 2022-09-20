@@ -34,8 +34,6 @@ const getAll: RequestHandler = async (req , res, next) => {
         console.log(err);
         res.status(500).end();
     }
-
-    next();
 }
 
 const getById: RequestHandler = async (req, res, next) => {
@@ -47,8 +45,6 @@ const getById: RequestHandler = async (req, res, next) => {
         res.json({
             message: "Unvalid id"
         });
-
-        next();
         return;
     }
 
@@ -64,7 +60,6 @@ const getById: RequestHandler = async (req, res, next) => {
 
         if(project == null) {
             res.status(404).end();
-            next();
             return;
         }
 
@@ -76,8 +71,6 @@ const getById: RequestHandler = async (req, res, next) => {
         console.log(err);
         res.status(500).end();
     }
-
-    next();
 }
 
 const create: RequestHandler = async (req, res, next) => {
@@ -90,8 +83,6 @@ const create: RequestHandler = async (req, res, next) => {
             .json({
             message: "Body missing."
         });
-
-        next();
         return;
     }
 
@@ -100,8 +91,6 @@ const create: RequestHandler = async (req, res, next) => {
             .json({
             message: "Some keys are invalid or missing."
         });
-
-        next();
         return;
     }
 
@@ -110,8 +99,6 @@ const create: RequestHandler = async (req, res, next) => {
             .json({
             message: "Some values are invalid."
         });
-
-        next();
         return;
     }
 
@@ -127,8 +114,6 @@ const create: RequestHandler = async (req, res, next) => {
         console.log(err);
         res.status(500).end();
     }
-
-    next();
 }
 
 const update: RequestHandler = async (req, res, next) => {
@@ -141,38 +126,30 @@ const update: RequestHandler = async (req, res, next) => {
         res.json({
             message: "Unvalid id"
         });
-
-        next();
         return;
     }
 
     if(bodyIsEmpty(req)) {
         res.status(400)
             .json({
-            message: "Body missing."
-        });
-
-        next();
+                message: "Body missing."
+            });
         return;
     }
 
     if(!requestKeysAllowed(req, allowedKeys)) {
         res.status(400)
             .json({
-            message: "Some keys are not allowed."
-        });
-
-        next();
+                message: "Some keys are not allowed."
+            });
         return;
     }
 
     if(! checkBodyValues(req.body)) {
         res.status(400)
             .json({
-            message: "Some values are invalid."
-        });
-
-        next();
+                message: "Some values are invalid."
+            });
         return;
     }
 
@@ -181,7 +158,6 @@ const update: RequestHandler = async (req, res, next) => {
 
         if(project == null) {
             res.status(404).end();
-            next();
             return;
         }
         
@@ -196,8 +172,6 @@ const update: RequestHandler = async (req, res, next) => {
         console.log(err);
         res.status(500).end();
     }
-
-    next();
 }
 
 const deleteProject: RequestHandler = async (req, res, next) => {
@@ -208,15 +182,12 @@ const deleteProject: RequestHandler = async (req, res, next) => {
         res.json({
             message: "Unvalid id"
         });
-
-        next();
         return;
     }
 
     try{
         if(await projectRepository.findOneBy({id: id}) == null) {
             res.status(404).end();
-            next();
             return;
         } 
 
@@ -228,8 +199,6 @@ const deleteProject: RequestHandler = async (req, res, next) => {
         console.log(err);
         res.status(500).end();
     }
-
-    next();
 }
 
 
