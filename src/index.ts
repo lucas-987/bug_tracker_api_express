@@ -2,6 +2,9 @@ import express, { Express, Request, Response } from 'express';
 import { AppDataSource } from './data_source';
 import apiRoutes from './routes/api_routes';
 import cors from 'cors';
+import dotenv from "dotenv";
+
+dotenv.config()
 
 const app: Express = express()
 const port = 3000

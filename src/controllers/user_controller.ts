@@ -1,7 +1,20 @@
 import { RequestHandler } from "express";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { userRepository } from "../data_source";
 import { bodyIsEmpty, requestKeysAllowed, requiredKeysPresent } from "./utils/checkBody";
+
+const DEFAULT_JWT_EXPIRATION = '30d'
+const generateJWToken = (data: Object, expiresIn: string = DEFAULT_JWT_EXPIRATION) => {
+
+    if(process.env.JWT_SECRET == null) {
+        throw new Error("JWT_SECRET missing in .env")
+    }
+
+    return jwt.sign(data, process.env.JWT_SECRET, {
+      expiresIn,
+    })
+}
 
 const checkBodyValues = (body: Object): boolean => {
     for(const [key, value] of Object.entries(body)) {
@@ -80,7 +93,7 @@ const login: RequestHandler = async (req, res, next) => {
 
         res.status(200)
             .json({
-                message: `${user.id} logged in`
+                token: generateJWToken({ id: user.id })
             });
 
     }
@@ -205,6 +218,12 @@ const update: RequestHandler = async (req, res, next) => {
         return;
     }
 
+    // we check that the request come from the user to be updated
+    if(!("loggedUser" in req) || !("id" in (req as any).loggedUser) || (req as any).loggedUser.id != id) {
+        res.status(401).end()
+        return
+    }
+
     if(bodyIsEmpty(req)) {
         res.status(400)
             .json({
@@ -270,6 +289,12 @@ const deleteUser: RequestHandler = async (req, res, next) => {
                 message: "Unvalid id"
             });
         return;
+    }
+
+    // we check that the request come from the user to be deleted 
+    if(!("loggedUser" in req) || !("id" in (req as any).loggedUser) || (req as any).loggedUser.id != id) {
+        res.status(401).end()
+        return
     }
 
     try{

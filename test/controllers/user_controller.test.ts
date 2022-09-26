@@ -6,6 +6,9 @@ import user_controller from "../../src/controllers/user_controller"
 import { userRepository } from "../../src/data_source"
 import { User } from "../../src/entities/User"
 import bcrypt from "bcrypt"
+import jwt from "jsonwebtoken"
+
+require("dotenv").config()
 
 const expect = chai.expect
 chai.use(sinonChai)
@@ -50,7 +53,7 @@ describe("user_controller", () => {
             passwordHash: bcrypt.hashSync("1234", salt)
         }
 
-        it("should call res.json with a loggin message and res.status with 200 on success", async () => {
+        it("should call res.json with an JWT token containing id of user and res.status with 200 on success", async () => {
             req.body = {
                 email: "user@user.user",
                 password: "1234"
@@ -65,7 +68,13 @@ describe("user_controller", () => {
             await user_controller.login(req as Request, res as Response, next)
 
             expect(res.status as SinonStub).to.have.been.calledOnceWith(200)
-            expect(statusJsonSpy).to.have.been.calledOnceWith(expectedResult)
+            expect(statusJsonSpy).to.have.been.calledOnce
+
+            const serverResponse = statusJsonSpy.getCall(0).args[0]
+            expect(serverResponse).not.null
+            expect("token" in serverResponse).true
+            const tokenDecrypted = jwt.verify(serverResponse.token, process.env.JWT_SECRET as string)
+            expect((tokenDecrypted as any).id).to.equal(user1.id)
         })
 
         it("should call res.status with 404 and res.json with an appropriate error message if no user matching the email is found", async () => {
@@ -523,6 +532,17 @@ describe("user_controller", () => {
     })
 
     describe("update", () => {
+        const user:User = {
+            id: 1,
+            username: "user",
+            email: "user@user.user",
+            passwordHash: ""
+        }; 
+
+        beforeEach(function() {
+            (req as any).loggedUser = user
+        })
+
         it("should call res.json with updatedUser and res.status with 200 on success", async () => {
             req.params = {
                 id: "1"
@@ -532,13 +552,6 @@ describe("user_controller", () => {
                 email: "user1@user1.user1",
                 password: "12345",
                 password2: "12345"
-            }
-
-            const user: User = {
-                id: 1,
-                username: "user",
-                email: "user@user.user",
-                passwordHash: ""
             }
 
             const expectedResult = {
@@ -860,23 +873,57 @@ describe("user_controller", () => {
             expect(res.status as SinonStub).to.have.been.calledOnceWith(409)
             expect(statusJsonSpy).to.have.been.calledOnceWith(expectedResult)
         })
+
+        it("should call res.status with 401 if req.headers.loggedUser is not the user requested to be updated", async () => {
+            const user2: User = {
+                id: 2,
+                username: "user2",
+                email: "user2@user2.user2",
+                passwordHash: ""
+            };
+            
+            (req as any).loggedUser = user2
+            req.params = {
+                id: "1"
+            }
+            req.body = {
+                username: "user1",
+                email: "user1@user1.user1",
+                password: "12345",
+                password2: "12345"
+            }
+
+            userRepository.findOneBy = sandbox.stub().resolves(user)
+
+            await user_controller.update(req as Request, res as Response, next)
+
+            expect(res.status as SinonStub).to.have.been.calledOnceWith(401)
+        })
     })
 
     describe("deleteUser", () => {
 
+        const user1: User = {
+            id: 1,
+            username: "user",
+            email: "user@user.user",
+            passwordHash: ""
+        }
+
+        const user3: User = {
+            id: 3,
+            username: "user3",
+            email: "user3@user3.user3",
+            passwordHash: ""
+        }
+
         it("should call res.status with 200 on success", async () => {
+            (req as any).loggedUser = user1
             req.params = {
                 id: "1"
             }
 
-            const user: User = {
-                id: 1,
-                username: "user",
-                email: "user@user.user",
-                passwordHash: ""
-            }
-
-            userRepository.findOne = sandbox.stub().returns(Promise.resolve(user))
+            userRepository.findOne = sandbox.stub().returns(Promise.resolve(user1))
 
             userRepository.delete = sandbox.stub().resolves()
 
@@ -901,6 +948,7 @@ describe("user_controller", () => {
         })
 
         it("should call res.status with 404 if the user is not found in db", async () => {
+            (req as any).loggedUser = user3
             req.params = {
                 id: "3"
             }
@@ -911,6 +959,24 @@ describe("user_controller", () => {
             await user_controller.deleteUser(req as Request, res as Response, next)
 
             expect(res.status as SinonStub).to.have.been.calledOnceWith(404)
+        })
+
+        it("should call res.status with 401 if req.headers.loggedUser is not the user requested to be deleted", async () => {
+            const user2: User = {
+                id: 2,
+                username: "user2",
+                email: "user2@user2.user2",
+                passwordHash: ""
+            };
+
+            (req as any).loggedUser = user2
+            req.params = {
+                id: "1"
+            }
+
+            await user_controller.deleteUser(req as Request, res as Response, next)
+
+            expect(res.status as SinonStub).to.have.been.calledOnceWith(401)
         })
     })
 })
